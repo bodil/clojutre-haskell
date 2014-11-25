@@ -1,0 +1,117 @@
+#+TITLE: Haskell for Clojurists
+
+* Why
+** A story of the Clojure community
+*** At the Conj
+**** such curious!
+**** Typed Clojure!
+**** miniKanren!
+**** Scala!
+*** Growing pains
+**** As communities grow, their minds close
+***** omg node
+**** We must not lose the curious!
+**** Being polyglot is how we maintain our edge
+* Haskell
+** Clojure's ideals:
+*** Careful design
+*** Immutability
+*** Lazy seqs
+*** Prefer to be pure
+** Haskell's ideals:
+*** Types
+*** Immutability
+*** Lazy everything
+*** Pure only
+** Clojure vs Haskell
+*** REPL vs compiler
+*** Metaprogramming vs types
+** Wait, did you say type system?
+*** If types were useful, Rich would have put them in Clojure?
+*** argue type systems...
+
+* Live
+** Hello world
+How to hello.
+#+begin_src haskell
+main = putStrLn "Hyvää iltapäivää, Tampere!"
+#+end_src
+With a type signature:
+#+begin_src haskell
+:type main
+main :: IO ()
+#+end_src
+#+begin_src haskell
+main :: IO ()
+main = do
+  putStrLn "Hyvää iltapäivää, Tampere!"
+  putStrLn "Mikä sinun nimesi on?"
+  name <- getLine
+  putStrLn $ "Hei " ++ name ++ "!!1"
+#+end_src
+What is this? omg halp it's a monad
+there's a monad slide
+
+**
+#+begin_src haskell
+module Literally.Clojure where
+
+import Prelude hiding (foldr, sum)
+import Data.Monoid
+import Data.Foldable
+
+data List a = Nil | Cons a (List a)
+            deriving Show
+
+foo :: List Integer
+foo = Cons 1 (Cons 2 (Cons 3 Nil))
+
+bar :: List Integer
+bar = Cons 4 (Cons 5 (Cons 6 Nil))
+
+car :: List a -> a
+car (Cons a _) = a
+
+cdr :: List a -> List a
+cdr (Cons _ d) = d
+
+-- do this first without the (Show a) restriction
+instance (Show a) => Show (List a) where
+  show Nil = "Nil"
+  show (Cons car cdr) = "(" ++ show car ++ " . " ++ show cdr ++ ")"
+
+mapl :: (a -> b) -> List a -> List b
+mapl _ Nil = Nil
+mapl fn (Cons a d) = Cons (fn a) (mapl fn d)
+
+instance Functor List where
+  fmap = mapl
+
+incList :: List Int -> List Int
+incList l = fmap (1 +) l
+
+concatl :: List a -> List a -> List a
+concatl Nil l2 = l2
+concatl (Cons a d) l2 = Cons a (concatl d l2)
+
+instance Monoid (List a) where
+  mempty = Nil
+  mappend = concatl
+
+mapcat :: Monoid a => (t -> a) -> List t -> a
+mapcat _ Nil = mempty
+mapcat f (Cons a Nil) = f a
+mapcat f (Cons a d) = mappend (f a) (mapcat f d)
+
+instance Foldable List where
+  foldMap = mapcat
+
+dupe :: a -> List a
+dupe a = Cons a (Cons a Nil)
+
+suml :: List Int -> Int
+suml = foldr (+) 0
+#+end_src
+
+** Hoogle
+M-x hoogle (Foldable t, Num a) => t a -> a
